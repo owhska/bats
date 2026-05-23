@@ -18,49 +18,55 @@ REAL_USER="${SUDO_USER:-${USER}}"
 REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
 
 ###############################################################################
-# 0. atualizar repositórios
+# 0. base-devel + fakeroot PRIMEIRO (makepkg depende disso)
+###############################################################################
+info "Instalando base-devel e fakeroot (necessários para AUR)..."
+pacman -Sy --noconfirm --needed base-devel fakeroot debugedit
+ok "base-devel instalado"
+
+###############################################################################
+# 1. atualizar repositórios
 ###############################################################################
 info "Atualizando repositórios pacman..."
-pacman -Syu --noconfirm
+pacman -Su --noconfirm
 ok "repositórios atualizados"
 
 ###############################################################################
-# 1. pacotes base do ambiente gráfico
+# 2. pacotes base do ambiente gráfico (repos oficiais)
 ###############################################################################
 info "Instalando pacotes do ambiente X11..."
 BASE_PKGS=(
     # X
     xorg-server xorg-xinit xterm xorg-xsetroot xorg-xrdb
-    # WM — cwm está no AUR; instalado na seção seguinte
     # fontes
     ttf-iosevka-nerd
     # utilitários X
-    xbindkeys xautolock xlockmore
-    # temperatura de cor
-    sct
-    # bateria / backlight
-    acpi light
+    xbindkeys
+    # backlight (substitui 'light', está nos repos oficiais)
+    brightnessctl
+    # bateria
+    acpi
     # áudio
     pipewire pipewire-alsa pipewire-pulse wireplumber pavucontrol
-    # apps básicos do menu cwm
+    # apps básicos
     thunar abiword firefox
     # links no terminal
     links
-    # dependências de build para AUR
-    base-devel git curl
+    # lockscreen
+    xlockmore
+    # dependências de build
+    git curl
 )
-pacman -S --noconfirm --needed "${BASE_PKGS[@]}" \
-    || warn "alguns pacotes podem não ter sido encontrados — verifique manualmente"
+pacman -S --noconfirm --needed "${BASE_PKGS[@]}"
 ok "pacotes base instalados"
 
 ###############################################################################
-# 2. AUR helper (yay) — necessário para cwm e bluetui
+# 3. AUR helper (yay)
 ###############################################################################
 if ! command -v yay &>/dev/null; then
     info "Instalando yay (AUR helper)..."
     AUR_TMP=$(mktemp -d)
     chown "$REAL_USER:$REAL_USER" "$AUR_TMP"
-    # clonar e buildar como o usuário real (makepkg não roda como root)
     sudo -u "$REAL_USER" git clone https://aur.archlinux.org/yay-bin.git "$AUR_TMP/yay-bin"
     pushd "$AUR_TMP/yay-bin" > /dev/null
     sudo -u "$REAL_USER" makepkg -si --noconfirm
@@ -72,15 +78,15 @@ else
 fi
 
 ###############################################################################
-# 3. cwm (AUR)
+# 4. pacotes AUR: cwm + xautolock + sct
 ###############################################################################
-info "Instalando cwm via AUR..."
-sudo -u "$REAL_USER" yay -S --noconfirm cwm \
-    || warn "falha ao instalar cwm pelo AUR — tente manualmente: yay -S cwm"
-ok "cwm instalado"
+info "Instalando pacotes AUR (cwm, xautolock, sct)..."
+sudo -u "$REAL_USER" yay -S --noconfirm cwm xautolock sct \
+    || warn "falha em algum pacote AUR — verifique manualmente"
+ok "pacotes AUR instalados"
 
 ###############################################################################
-# 4. Wi-Fi — NetworkManager + nmtui
+# 5. Wi-Fi — NetworkManager + nmtui
 ###############################################################################
 info "Instalando NetworkManager (nmtui)..."
 pacman -S --noconfirm --needed networkmanager
@@ -89,15 +95,13 @@ systemctl start NetworkManager 2>/dev/null || true
 ok "NetworkManager instalado e ativado"
 
 ###############################################################################
-# 5. Bluetooth — daemon + bluetui
+# 6. Bluetooth — daemon + bluetui
 ###############################################################################
 info "Instalando Bluetooth..."
 pacman -S --noconfirm --needed bluez bluez-utils
-
 systemctl enable bluetooth
 systemctl start bluetooth 2>/dev/null || true
 
-# bluetui: binário pré-compilado do GitHub
 BLUETUI_VERSION="0.3.2"
 BLUETUI_URL="https://github.com/pythops/bluetui/releases/download/v${BLUETUI_VERSION}/bluetui-x86_64-unknown-linux-gnu.tar.gz"
 BLUETUI_TMP=$(mktemp -d)
@@ -108,15 +112,14 @@ if curl -fsSL "$BLUETUI_URL" -o "$BLUETUI_TMP/bluetui.tar.gz"; then
     install -m755 "$BLUETUI_TMP/bluetui" /usr/local/bin/bluetui
     ok "bluetui instalado em /usr/local/bin/bluetui"
 else
-    warn "falha ao baixar bluetui — instale manualmente depois:"
+    warn "falha ao baixar bluetui — instale manualmente:"
     warn "  curl -fsSL $BLUETUI_URL | tar -xz && sudo install bluetui /usr/local/bin/"
 fi
 rm -rf "$BLUETUI_TMP"
-
 ok "bluetooth configurado"
 
 ###############################################################################
-# 6. Layout de teclado — br variant thinkpad
+# 7. Layout de teclado — br variant thinkpad
 ###############################################################################
 info "Configurando teclado br variant thinkpad..."
 mkdir -p /etc/X11/xorg.conf.d
@@ -128,15 +131,15 @@ Section "InputClass"
     Option "XkbVariant" "thinkpad"
 EndSection
 EOF
-# também via setxkbmap no .xsession (seção 7)
 ok "teclado br/thinkpad configurado"
 
 ###############################################################################
-# 7. dotfiles — Gruvbox Material Dark (hard)
+# 8. dotfiles — Gruvbox Material Dark (hard)
 ###############################################################################
 info "Escrevendo dotfiles..."
 
 # --- .xsession ---------------------------------------------------------------
+# Nota: 'light' substituído por 'brightnessctl' nos keybindings
 cat > "$REAL_HOME/.xsession" <<'EOF'
 export LANG=en_US.UTF-8
 export ENV=$HOME/.bashrc
@@ -147,7 +150,7 @@ setxkbmap br thinkpad
 xrdb -merge $HOME/.Xresources
 xsetroot -solid "#1d2021"
 
-# inatividade → trava com xautolock + xlock (substitui xidle no Arch)
+# inatividade → trava com xautolock + xlock
 xautolock -time 5 -locker 'xlock -mode blank' &
 xset b off
 sct 3500 &
@@ -156,7 +159,7 @@ sct 3500 &
 xterm -name batbar -class batbar -e '~/batbar' &
 xbindkeys &
 
-# iniciar pipewire via systemd --user (padrão no Arch)
+# iniciar pipewire via systemd --user
 systemctl --user start pipewire pipewire-pulse wireplumber 2>/dev/null || \
     pipewire &
 
@@ -241,7 +244,7 @@ batbar*foreground:   #d4be98
 batbar*background:   #32302f
 EOF
 
-# --- .xbindkeysrc ------------------------------------------------------------
+# --- .xbindkeysrc (brightnessctl no lugar de light) --------------------------
 cat > "$REAL_HOME/.xbindkeysrc" <<'EOF'
 "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"
   m:0x0 + c:123
@@ -255,11 +258,11 @@ cat > "$REAL_HOME/.xbindkeysrc" <<'EOF'
   m:0x0 + c:121
   XF86AudioMute
 
-"light -A 5"
+"brightnessctl set 5%+"
   m:0x0 + c:233
   XF86MonBrightnessUp
 
-"light -U 5"
+"brightnessctl set 5%-"
   m:0x0 + c:232
   XF86MonBrightnessDown
 
@@ -373,11 +376,10 @@ chown "$REAL_USER:$REAL_USER" \
 ok "dotfiles escritos"
 
 ###############################################################################
-# 8. permissões de backlight (light) para o usuário
+# 9. permissões de backlight (brightnessctl) para o usuário
 ###############################################################################
-info "Configurando permissões do light (backlight)..."
+info "Configurando permissões do brightnessctl (backlight)..."
 usermod -aG video "$REAL_USER" 2>/dev/null || true
-# udev rule para o grupo video escrever no backlight
 cat > /etc/udev/rules.d/90-backlight.rules <<'EOF'
 ACTION=="add", SUBSYSTEM=="backlight", \
   RUN+="/bin/chgrp video /sys/class/backlight/%k/brightness", \
@@ -386,13 +388,13 @@ EOF
 ok "backlight configurado (faça logout/login para aplicar)"
 
 ###############################################################################
-# 9. grupo bluetooth para o usuário
+# 10. grupo bluetooth para o usuário
 ###############################################################################
 usermod -aG bluetooth "$REAL_USER" 2>/dev/null || true
 ok "usuário adicionado ao grupo bluetooth"
 
 ###############################################################################
-# 10. habilitar pipewire via systemd --user no login
+# 11. habilitar pipewire via systemd --user no login
 ###############################################################################
 info "Habilitando pipewire no systemd --user..."
 sudo -u "$REAL_USER" systemctl --user enable pipewire pipewire-pulse wireplumber 2>/dev/null \
@@ -400,7 +402,7 @@ sudo -u "$REAL_USER" systemctl --user enable pipewire pipewire-pulse wireplumber
 ok "pipewire habilitado"
 
 ###############################################################################
-# 11. .xinitrc
+# 12. .xinitrc
 ###############################################################################
 cat > "$REAL_HOME/.xinitrc" <<'EOF'
 exec /bin/sh "$HOME/.xsession"
