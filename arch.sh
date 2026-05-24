@@ -182,66 +182,94 @@ chmod +x "$REAL_HOME/batbar"
 
 # --- .Xresources (Gruvbox Material Dark hard) --------------------------------
 cat > "$REAL_HOME/.Xresources" <<'EOF'
-XTerm*faceName: Iosevka Nerd Font:size=12
+XTerm*faceName: Iosevka Nerd Font:size=23
 
 XLock.dpmsoff:     1
 XLock.description: off
 XLock.echokeys:    off
 XLock.info:
-XLock.background:  black
-XLock.foreground:  white
+XLock.background:  #000000
+XLock.foreground:  #ffffff
 XLock.mode:        blank
 XLock.username:    username:
 XLock.password:    password:
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Gruvbox Material Dark — hard
+! Absolute Black Theme
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-*background: #1d2021
-*foreground: #d4be98
+*background: #000000
+*foreground: #e6e6e6
 
-! Black + DarkGrey
-*color0:  #1d2021
-*color8:  #32302f
+! cursor
+XTerm*cursorColor: #ffffff
 
-! DarkRed + Red
-*color1:  #ea6962
-*color9:  #ea6962
+! seleção
+XTerm*highlightColor: #1a1a1a
+XTerm*highlightTextColor: #ffffff
 
-! DarkGreen + Green
-*color2:  #a9b665
-*color10: #a9b665
+! preto / cinza
+*color0:  #000000
+*color8:  #4d4d4d
 
-! DarkYellow + Yellow
-*color3:  #d8a657
-*color11: #d8a657
+! vermelho
+*color1:  #ff4d4d
+*color9:  #ff6666
 
-! DarkBlue + Blue
-*color4:  #7daea3
-*color12: #7daea3
+! verde
+*color2:  #5cff87
+*color10: #7dff9b
 
-! DarkMagenta + Magenta
-*color5:  #d3869b
-*color13: #d3869b
+! amarelo
+*color3:  #ffd75f
+*color11: #ffe680
 
-! DarkCyan + Cyan
-*color6:  #89b482
-*color14: #89b482
+! azul
+*color4:  #5fafff
+*color12: #87cfff
 
-! LightGrey + White
-*color7:  #d4be98
-*color15: #ddc7a1
+! magenta
+*color5:  #d787ff
+*color13: #e6a8ff
 
-! batbar — barra de status
-batbar*faceName:     Iosevka Nerd Font:style=Bold:size=12
-batbar*geometry:     25x1+0+737
+! cyan
+*color6:  #5fffff
+*color14: #87ffff
+
+! branco
+*color7:  #d9d9d9
+*color15: #ffffff
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! XTerm tweaks
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+XTerm*scrollBar: false
+XTerm*rightScrollBar: false
+XTerm*saveLines: 5000
+XTerm*internalBorder: 8
+XTerm*bellIsUrgent: false
+XTerm*visualBell: false
+XTerm*urgentOnBell: false
+XTerm*dynamicColors: true
+XTerm*eightBitInput: false
+XTerm*metaSendsEscape: true
+XTerm*bellVolume: 0
+XTerm*utf8: 2
+XTerm*locale: true
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! batbar
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+batbar*faceName: Iosevka Nerd Font:style=Bold:size=12
+batbar*geometry: 25x1+0+1050
 batbar*internalBorder: 6
-batbar*saveLines:    0
-batbar*scrollBar:    false
-batbar*title:        batbar
-batbar*foreground:   #d4be98
-batbar*background:   #32302f
+batbar*saveLines: 0
+batbar*scrollBar: false
+batbar*title: batbar
+batbar*foreground: #ffffff
+batbar*background: #000000
 EOF
 
 # --- .xbindkeysrc (brightnessctl no lugar de light) --------------------------
@@ -327,10 +355,11 @@ bind-key CS-Right        window-snap-right
 bind-key 4-v             window-vtile
 bind-key 4-c             window-htile
 
-bind-key 4-slash         menu-window
+bind-key 4-comma         menu-window
 bind-key 4-d             menu-cmd
 bind-key 4-question      menu-exec
 bind-key 4-period        menu-ssh
+bind-key 4-tab           menu-window
 
 bind-key 4S-r            restart
 bind-key 4S-e            quit
@@ -357,11 +386,12 @@ command xcalc       xcalc
 command xclock      xclock
 command abiword     abiword
 command links       "xterm -e links www.duckduckgo.com"
+command android-studio android-studio
 
 ignore batbar
 
-borderwidth 4
-color activeborder   "#d4be98"
+borderwidth 2
+color activeborder   "#D3D3D3"
 color inactiveborder "#32302f"
 color urgencyborder  "#ea6962"
 EOF
