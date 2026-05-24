@@ -95,30 +95,6 @@ systemctl start NetworkManager 2>/dev/null || true
 ok "NetworkManager instalado e ativado"
 
 ###############################################################################
-# 6. Bluetooth — daemon + bluetui
-###############################################################################
-info "Instalando Bluetooth..."
-pacman -S --noconfirm --needed bluez bluez-utils
-systemctl enable bluetooth
-systemctl start bluetooth 2>/dev/null || true
-
-BLUETUI_VERSION="0.3.2"
-BLUETUI_URL="https://github.com/pythops/bluetui/releases/download/v${BLUETUI_VERSION}/bluetui-x86_64-unknown-linux-gnu.tar.gz"
-BLUETUI_TMP=$(mktemp -d)
-
-info "Baixando bluetui v${BLUETUI_VERSION}..."
-if curl -fsSL "$BLUETUI_URL" -o "$BLUETUI_TMP/bluetui.tar.gz"; then
-    tar -xzf "$BLUETUI_TMP/bluetui.tar.gz" -C "$BLUETUI_TMP"
-    install -m755 "$BLUETUI_TMP/bluetui" /usr/local/bin/bluetui
-    ok "bluetui instalado em /usr/local/bin/bluetui"
-else
-    warn "falha ao baixar bluetui — instale manualmente:"
-    warn "  curl -fsSL $BLUETUI_URL | tar -xz && sudo install bluetui /usr/local/bin/"
-fi
-rm -rf "$BLUETUI_TMP"
-ok "bluetooth configurado"
-
-###############################################################################
 # 7. Layout de teclado — br variant thinkpad
 ###############################################################################
 info "Configurando teclado br variant thinkpad..."
