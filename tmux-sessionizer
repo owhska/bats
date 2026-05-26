@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+# diretórios onde procurar projetos
+DIRS="$HOME $HOME/projects $HOME/dev"
+
+selected=$(find $DIRS -mindepth 1 -maxdepth 2 -type d 2>/dev/null | fzf)
+
+[ -z "$selected" ] && exit 0
+
+session=$(basename "$selected" | tr '.' '_')
+
+# cria sessão se não existir
+if ! tmux has-session -t "$session" 2>/dev/null; then
+  tmux new-session -d -s "$session" -c "$selected"
+fi
+
+# se já estiver no tmux -> troca de sessão
+if [ -n "$TMUX" ]; then
+  tmux switch-client -t "$session"
+else
+  tmux attach-session -t "$session"
+fi
